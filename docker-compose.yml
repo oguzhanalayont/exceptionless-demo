@@ -8,7 +8,7 @@ services:
       - elasticsearch
       - redis
     ports:
-      - "5000:8080"
+      - "5100:8080"
     environment:
       EX_ConnectionStrings__Cache: provider=redis
       EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
@@ -52,7 +52,7 @@ services:
       - "5200:80"
     environment:
       AppBaseUrl: http://localhost:5200
-      ApiBaseUrl: http://localhost:5000
+      ApiBaseUrl: http://localhost:5100
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
