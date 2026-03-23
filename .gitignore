@@ -1,0 +1,15 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+.vs/
+.vscode/
+
+## Environment
+.env
+
+## OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,109 @@
+services:
+  exceptionless-app:
+    image: exceptionless/api:8.3.1
+    platform: linux/amd64
+    container_name: exceptionless-app
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+      - redis
+    ports:
+      - "5000:8080"
+    environment:
+      EX_ConnectionStrings__Cache: provider=redis
+      EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
+      EX_ConnectionStrings__MessageBus: provider=redis
+      EX_ConnectionStrings__Queue: provider=redis
+      EX_ConnectionStrings__Redis: redis,abortConnect=false
+      EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
+      EX_RunJobsInProcess: "false"
+      EX_BaseUrl: http://localhost:5200
+    volumes:
+      - exceptionless-storage:/app/storage
+
+  exceptionless-jobs:
+    image: exceptionless/job:8.3.1
+    platform: linux/amd64
+    container_name: exceptionless-jobs
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+      - redis
+    environment:
+      EX_ConnectionStrings__Cache: provider=redis
+      EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
+      EX_ConnectionStrings__MessageBus: provider=redis
+      EX_ConnectionStrings__Queue: provider=redis
+      EX_ConnectionStrings__Redis: redis,abortConnect=false
+      EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
+      EX_RunJobsInProcess: "true"
+      EX_BaseUrl: http://localhost:5200
+    volumes:
+      - exceptionless-storage:/app/storage
+
+  exceptionless-ui:
+    image: exceptionless/ui:8.3.1
+    platform: linux/amd64
+    container_name: exceptionless-ui
+    restart: unless-stopped
+    depends_on:
+      - exceptionless-app
+    ports:
+      - "5200:80"
+    environment:
+      AppBaseUrl: http://localhost:5200
+      ApiBaseUrl: http://localhost:5000
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: exceptionless-elasticsearch
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      xpack.security.http.ssl.enabled: "false"
+      bootstrap.system_call_filter: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: exceptionless-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  log-bomb-service:
+    build:
+      context: ./test-microservice/LogBombService
+      dockerfile: Dockerfile
+    container_name: log-bomb-service
+    restart: unless-stopped
+    depends_on:
+      - exceptionless-app
+    ports:
+      - "5050:8080"
+    environment:
+      Exceptionless__ApiKey: "${EXCEPTIONLESS_API_KEY:-YOUR_API_KEY}"
+      Exceptionless__ServerUrl: http://exceptionless-app:8080
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.0
+    container_name: exceptionless-kibana
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+
+volumes:
+  exceptionless-storage:
+  elasticsearch-data:
+  redis-data:
