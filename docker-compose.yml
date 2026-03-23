@@ -18,6 +18,7 @@ services:
       EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
       EX_RunJobsInProcess: "false"
       EX_BaseUrl: http://localhost:5200
+      EX_EnableAccountCreation: "true"
     volumes:
       - exceptionless-storage:/app/storage
 
@@ -53,6 +54,7 @@ services:
     environment:
       AppBaseUrl: http://localhost:5200
       ApiBaseUrl: http://localhost:5100
+      EX_ApiUrl: http://localhost:5100
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
