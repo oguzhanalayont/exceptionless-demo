@@ -3,6 +3,7 @@ services:
     image: exceptionless/exceptionless:latest
     platform: linux/amd64
     container_name: exceptionless
+    user: root
     restart: unless-stopped
     depends_on:
       - elasticsearch
