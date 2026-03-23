@@ -1,6 +1,7 @@
 services:
   exceptionless:
     image: exceptionless/exceptionless:latest
+    platform: linux/amd64
     container_name: exceptionless
     restart: unless-stopped
     depends_on:
