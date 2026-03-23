@@ -15,20 +15,19 @@ services:
       EX_ConnectionStrings__MessageBus: provider=redis
       EX_ConnectionStrings__Queue: provider=redis
       EX_ConnectionStrings__Redis: redis,abortConnect=false
-      EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
+      EX_ConnectionStrings__Storage: provider=folder;path=/tmp/storage
       EX_RunJobsInProcess: "true"
       EX_EnableAccountCreation: "true"
     volumes:
-      - exceptionless-storage:/app/storage
+      - exceptionless-storage:/tmp/storage
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.24
     container_name: exceptionless-elasticsearch
     restart: unless-stopped
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
-      xpack.security.http.ssl.enabled: "false"
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
     ports:
       - "9200:9200"
@@ -59,7 +58,7 @@ services:
       Exceptionless__ServerUrl: http://exceptionless:8080
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.15.0
+    image: docker.elastic.co/kibana/kibana:7.17.24
     container_name: exceptionless-kibana
     restart: unless-stopped
     depends_on:
