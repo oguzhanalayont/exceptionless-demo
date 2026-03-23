@@ -1,6 +1,6 @@
 services:
   exceptionless-app:
-    image: exceptionless/api:8.3.1
+    image: exceptionless/api:latest
     platform: linux/amd64
     container_name: exceptionless-app
     restart: unless-stopped
@@ -22,7 +22,7 @@ services:
       - exceptionless-storage:/app/storage
 
   exceptionless-jobs:
-    image: exceptionless/job:8.3.1
+    image: exceptionless/job:latest
     platform: linux/amd64
     container_name: exceptionless-jobs
     restart: unless-stopped
@@ -42,7 +42,7 @@ services:
       - exceptionless-storage:/app/storage
 
   exceptionless-ui:
-    image: exceptionless/ui:8.3.1
+    image: exceptionless/ui:latest
     platform: linux/amd64
     container_name: exceptionless-ui
     restart: unless-stopped
