@@ -8,16 +8,9 @@ builder.Services.AddExceptionless(config =>
     config.ServerUrl = builder.Configuration["Exceptionless:ServerUrl"] ?? "http://localhost:5200";
 });
 
-builder.Services.AddOpenApi();
-
 var app = builder.Build();
 
 app.UseExceptionless();
-
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
 
 // Sağlık kontrolü
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
