@@ -1,45 +1,14 @@
 services:
-  nginx:
-    image: nginx:alpine
-    container_name: exceptionless-proxy
+  exceptionless:
+    image: exceptionless/exceptionless:latest
+    platform: linux/amd64
+    container_name: exceptionless
     restart: unless-stopped
     depends_on:
-      - exceptionless-app
-      - exceptionless-ui
+      - elasticsearch
+      - redis
     ports:
-      - "5200:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-
-  exceptionless-app:
-    image: exceptionless/api:latest
-    platform: linux/amd64
-    container_name: exceptionless-app
-    restart: unless-stopped
-    depends_on:
-      - elasticsearch
-      - redis
-    environment:
-      EX_ConnectionStrings__Cache: provider=redis
-      EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
-      EX_ConnectionStrings__MessageBus: provider=redis
-      EX_ConnectionStrings__Queue: provider=redis
-      EX_ConnectionStrings__Redis: redis,abortConnect=false
-      EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
-      EX_RunJobsInProcess: "false"
-      EX_BaseUrl: http://localhost:5200
-      EX_EnableAccountCreation: "true"
-    volumes:
-      - exceptionless-storage:/app/storage
-
-  exceptionless-jobs:
-    image: exceptionless/job:latest
-    platform: linux/amd64
-    container_name: exceptionless-jobs
-    restart: unless-stopped
-    depends_on:
-      - elasticsearch
-      - redis
+      - "5200:8080"
     environment:
       EX_ConnectionStrings__Cache: provider=redis
       EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
@@ -48,20 +17,10 @@ services:
       EX_ConnectionStrings__Redis: redis,abortConnect=false
       EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
       EX_RunJobsInProcess: "true"
-      EX_BaseUrl: http://localhost:5200
+      EX_EnableAccountCreation: "true"
     volumes:
       - exceptionless-storage:/app/storage
-
-  exceptionless-ui:
-    image: exceptionless/ui:latest
-    platform: linux/amd64
-    container_name: exceptionless-ui
-    restart: unless-stopped
-    depends_on:
-      - exceptionless-app
-    environment:
-      AppBaseUrl: http://localhost:5200
-      ApiBaseUrl: http://localhost:5200
+      - ./supervisord.conf:/etc/supervisord.conf:ro
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.24
@@ -92,12 +51,12 @@ services:
     container_name: log-bomb-service
     restart: unless-stopped
     depends_on:
-      - exceptionless-app
+      - exceptionless
     ports:
       - "5050:8080"
     environment:
       Exceptionless__ApiKey: "${EXCEPTIONLESS_API_KEY:-YOUR_API_KEY}"
-      Exceptionless__ServerUrl: http://exceptionless-app:8080
+      Exceptionless__ServerUrl: http://exceptionless:8080
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.17.24
