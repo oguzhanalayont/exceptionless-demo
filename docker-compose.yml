@@ -19,12 +19,15 @@ services:
       EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
       EX_RunJobsInProcess: "true"
       EX_EnableAccountCreation: "true"
+      EX_ElasticsearchOptions__EnableMapperSizePlugin: "true"
     volumes:
       - exceptionless-storage:/app/storage
       - ./supervisord.conf:/etc/supervisord.conf:ro
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.24
+    build:
+      context: .
+      dockerfile: elasticsearch.Dockerfile
     container_name: exceptionless-elasticsearch
     restart: unless-stopped
     environment:

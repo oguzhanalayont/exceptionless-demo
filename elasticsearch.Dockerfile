@@ -1,0 +1,2 @@
+FROM docker.elastic.co/elasticsearch/elasticsearch:7.17.24
+RUN bin/elasticsearch-plugin install mapper-size
