@@ -4,6 +4,7 @@ services:
     platform: linux/amd64
     container_name: exceptionless
     restart: unless-stopped
+    user: root
     depends_on:
       - elasticsearch
       - redis
@@ -15,11 +16,11 @@ services:
       EX_ConnectionStrings__MessageBus: provider=redis
       EX_ConnectionStrings__Queue: provider=redis
       EX_ConnectionStrings__Redis: redis,abortConnect=false
-      EX_ConnectionStrings__Storage: provider=folder;path=/tmp/storage
+      EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
       EX_RunJobsInProcess: "true"
       EX_EnableAccountCreation: "true"
     volumes:
-      - exceptionless-storage:/tmp/storage
+      - exceptionless-storage:/app/storage
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.24
