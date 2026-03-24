@@ -1,6 +1,6 @@
 # Exceptionless Demo
 
-Self-hosted Exceptionless kurulumu. Mevcut projelerine eklenti olarak entegre edip hata takibi, log toplama ve bildirim yönetimi yapabilirsin.
+Self-hosted Exceptionless kurulumu. Mevcut projelerine eklenti olarak entegre edip hata takibi, log toplama ve Telegram üzerinden bildirim alabilirsin.
 
 ## Gereksinimler
 
@@ -11,6 +11,7 @@ Self-hosted Exceptionless kurulumu. Mevcut projelerine eklenti olarak entegre ed
 ```bash
 git clone https://github.com/oguzhanalayont/exceptionless-demo.git
 cd exceptionless-demo
+cp .env.example .env
 docker compose up -d --build
 ```
 
@@ -30,6 +31,80 @@ Tüm container'lar "Running" olana kadar bekle (~1 dk).
 2. **Sign Up** ile hesap oluştur (ilk kullanıcı otomatik admin olur)
 3. Organization ve Project oluştur
 4. Project Settings > API Keys bölümünden **API Key**'i kopyala
+5. `.env` dosyasındaki `EXCEPTIONLESS_API_KEY` değerini güncelle
+
+## Telegram Bildirim Sistemi
+
+Belirli eşikler aşıldığında Telegram üzerinden otomatik bildirim alabilirsin. İki tür bildirim desteklenir:
+
+- **Toplam event uyarısı**: Belirlenen sürede toplam event sayısı eşiği aşarsa bildirim gelir
+- **Tekrarlayan hata alarmı**: Aynı hata belirli sürede belirli sayıdan fazla tekrarlanırsa, hata detaylarıyla birlikte bildirim gelir
+
+### Telegram Bot Kurulumu
+
+1. Telegram'da **@BotFather**'a `/newbot` yaz
+2. Botuna bir isim ve username ver
+3. BotFather'ın verdiği **API token**'ı kaydet
+4. Botu bildirimleri alacağın gruba ekle
+5. Grupta bir mesaj yaz, sonra tarayıcıda şu URL'yi aç:
+   ```
+   https://api.telegram.org/bot<TOKEN>/getUpdates
+   ```
+6. Dönen JSON'daki `"chat":{"id": -100...}` değeri senin **Chat ID**'n
+
+### Yapılandırma
+
+`.env` dosyasını düzenle:
+
+```env
+TELEGRAM_BOT_TOKEN=bot_tokenin_buraya
+TELEGRAM_CHAT_ID=chat_id_buraya
+EVENT_THRESHOLD=100
+ERROR_THRESHOLD=10
+POLL_INTERVAL=10
+COOLDOWN_SECONDS=60
+EXCEPTIONLESS_API_KEY=senin_api_keyin
+```
+
+| Değişken | Varsayılan | Açıklama |
+|----------|-----------|----------|
+| `TELEGRAM_BOT_TOKEN` | - | Telegram bot API token'ı |
+| `TELEGRAM_CHAT_ID` | - | Bildirim gönderilecek chat/grup ID'si |
+| `EVENT_THRESHOLD` | 100 | Toplam event uyarısı için eşik değeri |
+| `ERROR_THRESHOLD` | 10 | Tekrarlayan hata alarmı için eşik değeri |
+| `POLL_INTERVAL` | 10 | Kaç saniyede bir kontrol edilsin (saniye) |
+| `COOLDOWN_SECONDS` | 60 | Aynı alarm için tekrar bekleme süresi (saniye) |
+
+### Servisi Başlatma
+
+```bash
+docker compose up -d --build telegram-notifier
+```
+
+### Bildirim Örnekleri
+
+**Toplam event uyarısı** (10 saniyede 100+ event):
+
+```
+Exceptionless Uyarısı
+
+Son 10 saniyede 333 event algılandı!
+Hız: 33.3 event/saniye
+Zaman: 2026-03-24 15:45:00
+```
+
+**Tekrarlayan hata alarmı** (10 saniyede aynı hatadan 10+):
+
+```
+Tekrarlayan Hata Alarmı
+
+Hata: NullReferenceException: Object reference not set to an instance of an object
+Tip: error
+Tekrar: Son 10s içinde 47 kez
+Etiketler: production, payment-service
+Konum: /src/Services/PaymentService.cs:142 → ProcessPayment
+Zaman: 2026-03-24 15:45:00
+```
 
 ## Kendi Projene Entegre Etme
 
@@ -167,8 +242,9 @@ Repoda hazır bir test microservice var. Exceptionless'ın davranışını test 
 
 ### Yapılandırma
 
+`.env` dosyasındaki `EXCEPTIONLESS_API_KEY` değerini ayarla ve servisi başlat:
+
 ```bash
-echo "EXCEPTIONLESS_API_KEY=senin_api_keyin" > .env
 docker compose up -d --build log-bomb-service
 ```
 
@@ -207,14 +283,15 @@ curl -X POST "http://localhost:5050/log-levels?count=500"
 - **Gruplama**: Farklı exception türleri ayrı stack'lerde toplanır
 - **Log seviyeleri**: Dashboard'da Info/Warn/Error olarak filtrelenebilir
 - **Rate limiting**: Client tarafında throttling yapılır
+- **Telegram bildirimi**: Eşik aşıldığında otomatik bildirim gelir
 
 ## Mimari
 
 ```
                          ┌──────────────────────────────┐
-                         │   Exceptionless (all-in-one) │
-┌─────────────────┐      │   API + UI + Jobs            │
-│  Log Bomb       │─────▶│   :5200                      │
+                         │   Exceptionless (all-in-one)  │
+┌─────────────────┐      │   API + UI + Jobs             │
+│  Log Bomb       │─────▶│   :5200                       │
 │  Service :5050  │      └──────────┬───────────────────┘
 └─────────────────┘                 │
                        ┌────────────┼────────────┐
@@ -225,10 +302,12 @@ curl -X POST "http://localhost:5050/log-levels?count=500"
                  └──────────┘          │  + mapper-size     │
                                        └─────────┬─────────┘
                                                   │
-                                       ┌──────────▼────────┐
-                                       │  Kibana           │
-                                       │  :5601            │
-                                       └───────────────────┘
+                                  ┌───────────────┼───────────────┐
+                                  │                               │
+                       ┌──────────▼────────┐          ┌───────────▼───────┐
+                       │  Kibana           │          │  Telegram         │
+                       │  :5601            │          │  Notifier :5001   │
+                       └───────────────────┘          └───────────────────┘
 ```
 
 ## Servisler
@@ -240,18 +319,7 @@ curl -X POST "http://localhost:5050/log-levels?count=500"
 | Elasticsearch | 9200 | Veri deposu (mapper-size plugin'li) |
 | Kibana | 5601 | Elasticsearch görselleştirme |
 | Redis | 6379 | Cache + message bus + queue |
-
-## Bildirim Ayarları
-
-Dashboard'da bildirim kuralları eklemek için:
-
-1. **http://localhost:5200** > Projene git
-2. **Project Settings** > **Integrations / Notifications**
-3. Kural örnekleri:
-   - **New error** — ilk kez görülen hata
-   - **Critical error** — kritik seviye
-   - **Regression** — düzeltilmiş hatanın tekrarı
-   - **Event count** — belirli eşik sonrası (ör. 50+)
+| Telegram Notifier | 5001 | Bildirim servisi (Telegram entegrasyonu) |
 
 ## Sıfırlama
 
@@ -279,4 +347,19 @@ docker logs exceptionless 2>&1 | grep -i "denied\|error saving"
 
 # ES bağlantısı var mı kontrol et
 curl http://localhost:9200
+```
+
+**Telegram bildirimi gelmiyorsa:**
+
+```bash
+# Notifier loglarını kontrol et
+docker logs telegram-notifier --tail 20
+
+# ES'e event düşüyor mu kontrol et
+curl -s "http://localhost:9200/prod-events-v1-*/_count"
+
+# Bot'un mesaj gönderip gönderemediğini test et
+curl -s "https://api.telegram.org/bot<TOKEN>/sendMessage" \
+  -d chat_id=<CHAT_ID> \
+  -d text="Test mesajı"
 ```
