@@ -47,7 +47,7 @@ def get_total_count() -> int:
         query = {
             "query": {
                 "range": {
-                    "date": {"gte": f"now-{POLL_INTERVAL}s", "lte": "now"}
+                    "created_utc": {"gte": f"now-{POLL_INTERVAL}s", "lte": "now"}
                 }
             }
         }
@@ -72,7 +72,7 @@ def get_top_errors() -> list[dict]:
             "query": {
                 "bool": {
                     "must": [
-                        {"range": {"date": {"gte": f"now-{POLL_INTERVAL}s", "lte": "now"}}}
+                        {"range": {"created_utc": {"gte": f"now-{POLL_INTERVAL}s", "lte": "now"}}}
                     ]
                 }
             },
