@@ -80,6 +80,7 @@ services:
       POLL_INTERVAL: "${POLL_INTERVAL:-10}"
       COOLDOWN_SECONDS: "${COOLDOWN_SECONDS:-60}"
       ELASTICSEARCH_URL: http://elasticsearch:9200
+      TZ: Europe/Istanbul
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.17.24
