@@ -2,7 +2,6 @@ import os
 import time
 import threading
 import logging
-from datetime import datetime, timedelta, timezone
 from flask import Flask, jsonify
 import requests
 
@@ -16,8 +15,7 @@ TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 THRESHOLD = int(os.environ.get("EVENT_THRESHOLD", "100"))
 POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "10"))
 COOLDOWN_SECONDS = int(os.environ.get("COOLDOWN_SECONDS", "60"))
-EXCEPTIONLESS_URL = os.environ.get("EXCEPTIONLESS_URL", "http://exceptionless:8080")
-EXCEPTIONLESS_API_KEY = os.environ.get("EXCEPTIONLESS_API_KEY", "")
+ELASTICSEARCH_URL = os.environ.get("ELASTICSEARCH_URL", "http://elasticsearch:9200")
 
 TELEGRAM_API = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
 
@@ -41,34 +39,37 @@ def send_telegram(message: str):
 
 
 def get_event_count() -> int:
-    """Query Exceptionless API for recent event count."""
+    """Query Elasticsearch for recent event count."""
     try:
-        now = datetime.now(timezone.utc)
-        start = now - timedelta(seconds=POLL_INTERVAL)
-        start_str = start.strftime("%Y-%m-%dT%H:%M:%S")
-        end_str = now.strftime("%Y-%m-%dT%H:%M:%S")
+        query = {
+            "query": {
+                "range": {
+                    "date": {
+                        "gte": f"now-{POLL_INTERVAL}s",
+                        "lte": "now"
+                    }
+                }
+            }
+        }
 
-        headers = {"Authorization": f"Bearer {EXCEPTIONLESS_API_KEY}"}
-        url = f"{EXCEPTIONLESS_URL}/api/v2/events/count?time={start_str}-{end_str}"
-
-        resp = requests.get(url, headers=headers, timeout=10)
+        resp = requests.get(
+            f"{ELASTICSEARCH_URL}/events-*/_count",
+            json=query,
+            timeout=10,
+        )
         if resp.ok:
-            data = resp.json()
-            total = data.get("total", data.get("count", 0))
-            # Exceptionless count endpoint returns aggregate data
-            if isinstance(total, (int, float)):
-                return int(total)
-            return 0
+            count = resp.json().get("count", 0)
+            return int(count)
         else:
-            logger.error("Exceptionless API error %s: %s", resp.status_code, resp.text)
+            logger.error("Elasticsearch error %s: %s", resp.status_code, resp.text)
             return 0
     except Exception:
-        logger.exception("Failed to query Exceptionless API")
+        logger.exception("Failed to query Elasticsearch")
         return 0
 
 
 def poll_loop():
-    """Periodically check Exceptionless event count."""
+    """Periodically check event count via Elasticsearch."""
     global last_alert_time
     logger.info(
         "Polling started: checking every %ds, threshold=%d events, cooldown=%ds",
