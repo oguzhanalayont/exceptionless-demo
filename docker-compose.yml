@@ -62,6 +62,23 @@ services:
       Exceptionless__ApiKey: "${EXCEPTIONLESS_API_KEY:-YOUR_API_KEY}"
       Exceptionless__ServerUrl: http://exceptionless:8080
 
+  telegram-notifier:
+    build:
+      context: ./telegram-notifier
+      dockerfile: Dockerfile
+    container_name: telegram-notifier
+    restart: unless-stopped
+    depends_on:
+      - exceptionless
+    ports:
+      - "5000:5000"
+    environment:
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
+      TELEGRAM_CHAT_ID: "${TELEGRAM_CHAT_ID}"
+      EVENT_THRESHOLD: "${EVENT_THRESHOLD:-100}"
+      WINDOW_SECONDS: "${WINDOW_SECONDS:-1}"
+      COOLDOWN_SECONDS: "${COOLDOWN_SECONDS:-60}"
+
   kibana:
     image: docker.elastic.co/kibana/kibana:7.17.24
     container_name: exceptionless-kibana
