@@ -72,7 +72,7 @@ EXCEPTIONLESS_API_KEY=senin_api_keyin
 | `TELEGRAM_CHAT_ID` | - | Bildirim gönderilecek chat/grup ID'si |
 | `EVENT_THRESHOLD` | 100 | Toplam event uyarısı için eşik değeri |
 | `ERROR_THRESHOLD` | 10 | Tekrarlayan hata alarmı için eşik değeri |
-| `POLL_INTERVAL` | 10 | Kaç saniyede bir kontrol edilsin (saniye) |
+| `POLL_INTERVAL` | 30 | Kaç saniyede bir kontrol edilsin (saniye) |
 | `COOLDOWN_SECONDS` | 60 | Aynı alarm için tekrar bekleme süresi (saniye) |
 
 ### Servisi Başlatma
