@@ -53,7 +53,7 @@ def get_event_count() -> int:
         }
 
         resp = requests.get(
-            f"{ELASTICSEARCH_URL}/events-*/_count",
+            f"{ELASTICSEARCH_URL}/prod-events-v1-*/_count",
             json=query,
             timeout=10,
         )
