@@ -135,12 +135,11 @@ def format_error_message(error: dict) -> str:
     etype = html.escape(error['type'])
 
     lines = [
-        f"<b>Tekrarlayan Hata Alarmi</b>",
+        f"<b>Tekrarlayan Hata Alarmı</b>",
         f"",
         f"<b>Hata:</b> {msg}",
         f"<b>Tip:</b> {etype}",
-        f"<b>Tekrar:</b> Son {POLL_INTERVAL}s icinde <b>{error['count']}</b> kez",
-        f"<b>Esik:</b> {ERROR_THRESHOLD}",
+        f"<b>Tekrar:</b> Son {POLL_INTERVAL}s içinde <b>{error['count']}</b> kez",
     ]
 
     if error["tags"]:
@@ -181,10 +180,9 @@ def poll_loop():
         if total >= THRESHOLD and (now - last_total_alert) > COOLDOWN_SECONDS:
             last_total_alert = now
             send_telegram(
-                f"<b>Exceptionless Alert</b>\n\n"
-                f"Son <b>{POLL_INTERVAL}</b> saniyede <b>{total}</b> event algilandi!\n"
-                f"Hiz: <b>{rate:.1f}</b> event/saniye\n"
-                f"Esik degeri: {THRESHOLD} / {POLL_INTERVAL}s\n"
+                f"<b>Exceptionless Uyarısı</b>\n\n"
+                f"Son <b>{POLL_INTERVAL}</b> saniyede <b>{total}</b> event algılandı!\n"
+                f"Hız: <b>{rate:.1f}</b> event/saniye\n"
                 f"Zaman: {time.strftime('%Y-%m-%d %H:%M:%S')}"
             )
 
