@@ -1,5 +1,6 @@
 import os
 import time
+import html
 import threading
 import logging
 from flask import Flask, jsonify
@@ -130,25 +131,29 @@ def get_top_errors() -> list[dict]:
 
 def format_error_message(error: dict) -> str:
     """Format a single error for Telegram notification."""
+    msg = html.escape(error['message'])
+    etype = html.escape(error['type'])
+
     lines = [
         f"<b>Tekrarlayan Hata Alarmi</b>",
         f"",
-        f"<b>Hata:</b> {error['message']}",
-        f"<b>Tip:</b> {error['type']}",
+        f"<b>Hata:</b> {msg}",
+        f"<b>Tip:</b> {etype}",
         f"<b>Tekrar:</b> Son {POLL_INTERVAL}s icinde <b>{error['count']}</b> kez",
         f"<b>Esik:</b> {ERROR_THRESHOLD}",
     ]
 
     if error["tags"]:
-        lines.append(f"<b>Etiketler:</b> {', '.join(error['tags'])}")
+        tags = ', '.join(html.escape(t) for t in error['tags'])
+        lines.append(f"<b>Etiketler:</b> {tags}")
 
     # Add first stack trace entry if available
     traces = error.get("stack_trace", [])
     if traces:
         t = traces[0]
-        file_name = t.get("file_name", "")
+        file_name = html.escape(t.get("file_name", ""))
         line_num = t.get("line_number", "")
-        method = t.get("name", "")
+        method = html.escape(t.get("name", ""))
         if file_name:
             lines.append(f"<b>Konum:</b> {file_name}:{line_num} → {method}")
 
