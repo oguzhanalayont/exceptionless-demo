@@ -76,8 +76,10 @@ services:
       TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
       TELEGRAM_CHAT_ID: "${TELEGRAM_CHAT_ID}"
       EVENT_THRESHOLD: "${EVENT_THRESHOLD:-100}"
-      WINDOW_SECONDS: "${WINDOW_SECONDS:-1}"
+      POLL_INTERVAL: "${POLL_INTERVAL:-10}"
       COOLDOWN_SECONDS: "${COOLDOWN_SECONDS:-60}"
+      EXCEPTIONLESS_URL: http://exceptionless:8080
+      EXCEPTIONLESS_API_KEY: "${EXCEPTIONLESS_API_KEY}"
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.17.24
